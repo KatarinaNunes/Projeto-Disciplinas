@@ -1,2 +1,2 @@
 # Projeto-Disciplinas
-Códigos utilizados durante o processamento de dados do projeto na disciplina
+Documentação das etapas do processo do projeto de avaliação para as Disciplinas de Bioinformática Aplicada e Machine Learning.
