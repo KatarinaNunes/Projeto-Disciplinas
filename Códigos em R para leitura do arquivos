@@ -1,0 +1,274 @@
+#Lendo os arquivos
+
+missing_indv <- read.csv("missing_indv_cftr.imiss", header = TRUE, sep = "\t")
+missing_site <- read.csv("missing_site_cftr.lmiss", header = TRUE, sep = "\t")
+
+indels <- read.table("indels_ind_cftr.recode.txt", header = TRUE, sep = "\t")
+singletons <- read.csv("IND_singletons.singletons", header = TRUE, sep = "\t")
+
+library(ggpubr)
+
+barplot(frequencias)
+barplot(frequencias, main = "Hist Singletons x Doubletons", xlab = "Singletons(S)/Doubletons(D)", ylab = "Frequência", col = "salmon")
+
+gghistogram(frequencias, x = "s/d",
+            add = "mean", rug = TRUE,
+            color = "SINGLETON.DOUBLETON", fill = "SINGLETON.DOUBLETON",
+            palette = c("#00AFBB", "#E7B800"))
+
+miss_site_1 <- missing_site$POS 
+miss_site_2 <- missing_site$F_MISS
+numeric <- as.numeric(miss_site_2)
+df <- data.frame(singletons)
+
+hist(missing_site$F_MISS,
+     main = "Taxa de Genotipagem",
+     xlab = "Frequency of Missing Data", ylab = "Quantidade",
+     col = c("violet"))
+
+
+hist(missing_indv$F_MISS,
+     main = "histogram",
+     xlab = "Frequency of Missing Indv", ylab = "Quantidade",
+     col = c("pink"))    
+
+##plotagem dos histogramas do ggpubr
+
+install.packages("grid.arrange")
+library(tidyverse)
+library(corrplot)
+library(dplyr)
+library(ggpubr)
+library(ggplot2)
+library(readxl)
+
+#plot dos missing-indv
+
+p <- gghistogram(missing_indv, x = "F_MISS",
+                 add = "mean",
+                 color = "black", fill = "violetred",
+                 xlab = "Frequency",
+                 ylab = "Distribution",
+                 title = "Genotyping rate per Individual",
+                 )
+
+p1 <- ggdensity(missing_indv, x = "F_MISS", fill = "violet", add = "mean", rug = TRUE, title =  )
+
+plot(p)
+plot(p1)
+
+gridExtra::grid.arrange(p, p1,nrow = 1)
+
+p3 <- gghistogram(df, x = "taxa_missing_indv",
+                 add = "mean",
+                 color = "black", fill = "salmon",
+                 xlab = "Valores de Coluna 1",
+                 ylab = "Frequência",
+                 title = "Missing Data por Indivíduo")
+
+plot(p3)
+
+taxa_missing_indv <- missing_indv$F_MISS - 1
+df <- as.data.frame(taxa_missing_indv)
+
+#plot dos missing-site
+
+site_1 <- ggdensity(missing_site, x ="F_MISS", fill = "springgreen4", add = "mean", rug = TRUE)
+
+site_2 <- gghistogram(missing_site, x = "F_MISS",
+            add = "mean",
+            color = "black", fill = "lightgreen",
+            xlab = "Frequency",
+            ylab = "distribution",
+            title = "Genotyping Rate by Site")
+plot(site_2)
+plot(site_1)
+
+gridExtra::grid.arrange(site_2, site_1,nrow = 1)
+
+
+#plot da quantidade de missing
+
+
+taxa_missing_site <- missing_site$F_MISS - 1
+df_2 <- as.data.frame(taxa_missing_site)
+
+site_3 <- gghistogram(df_2, x = "taxa_missing_site",
+            add = "mean",
+            color = "black", fill = "violetred1",
+            xlab = "Valores de Genotipagem por SNP",
+            ylab = "Frequência",
+            title = "Missing-Data por SNP")
+plot(site_3)
+
+
+#leitura dos arquivos singletons
+
+box1 <- ggboxplot(singletons, x = "SINGLETON.DOUBLETON", y = "INDV",
+                  color = "SINGLETON.DOUBLETON", palette =c("#00AFBB", "#E7B800", "#FC4E07"),
+                  add = "jitter", shape = "SINGLETON.DOUBLETON")
+plot(box1)
+
+p_ajuste <- box1 + theme(axis.text.y = element_text(size = 6))
+plot(p_ajuste)
+
+frequencias <- table(singletons$SINGLETON.DOUBLETON)
+barplot(frequencias, main = "Singletons x Doubletons", xlab = "Singletons(S)/Doubletons(D)", ylab = "Frequency", col = "turquoise3")
+
+barplot(frequencias, main = "Hist Singletons x Doubletons", 
+        xlab = "SINGLETON.DOUBLETON", ylab = "Frequência",  
+        col = "violetred",
+        geom_bar(stat = "identity"))
+
+##ggplot com singletons
+
+
+ggplot(singletons, aes(x = SINGLETON.DOUBLETON, y = POS, fill = "violet")) +
+  geom_bar(stat = "identity", width = 0.5) +  # Ajustar a largura das barras
+  theme_minimal() +
+  labs(title = "Distribuição de Singletons e Doubletons",
+       x = "Tipo de Variante",
+       y = "Posições") +
+  scale_fill_manual(values = c("Singleton" = "blue", "Doubleton" = "red", "Other" = "gray"))
+
+ggbarplot(singletons, x = "SINGLETON.DOUBLETON", y = "CHROM",
+          fill = "type", color = "type", palette = "jco",
+          title = "Count of Singletons and Doubletons",
+          xlab = "Type", ylab = "Count",
+          legend = "none",
+          label = TRUE, lab.vjust = -0.5)
+
+##plotagem dos indels
+
+
+table_indels <- read_excel("tabela indels.xlsx")
+
+indels_data <- table_indels %>%
+  mutate(length = nchar(ALT) - nchar(REF))
+
+#distribuição do tamanho de indels
+
+p_density <- ggplot(indels_data, aes(x = length, fill = CHROM)) +
+  geom_density(alpha = 0.5) +
+  theme_minimal() +
+  labs(title = "Size Distribution of Indels",
+       x = "Size of Indels",
+       y = "Density",
+       color = "blue")
+plot(p_density)
+
+#grafico de indels
+
+library(dplyr)
+library(ggplot2)
+library(vcfR)
+
+
+#ler o vcf
+
+vcf_file <- "vcf_indels.recode.vcf"  
+vcf <- read.vcfR(vcf_file)
+
+# Extrair a matriz de dados fixos (FIX) do VCF
+
+fixed <- extract.gt(vcf, element = "ALT", as.numeric = TRUE)
+
+# Converter o FIX em um data frame
+fixed_df <- as.data.frame(fixed)
+
+# Adicionar informações de referência (REF) e variantes (ALT) do VCF ao data frame
+
+fixed_df <- cbind(REF = vcf@fix[, "REF"], ALT = vcf@fix[, "ALT"], fixed_df)
+
+# Identificar indels
+indels <- fixed_df %>%
+  filter(nchar(REF) != nchar(ALT))
+
+# Verificar as primeiras linhas dos indels
+
+# Adicionar uma coluna indicando o tipo de indel
+indels <- indels %>%
+  mutate(type = ifelse(nchar(REF) > nchar(ALT), "Deletion", "Insertion"))
+
+# Contar o número de inserções e deleções
+indel_counts <- indels %>%
+  group_by(type) %>%
+  summarise(count = n())
+
+# Plotar o gráfico de barras
+ggplot(indel_counts, aes(x = type, y = count, fill = type)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Count of Insertions and Deletions",
+       x = "Type of Indel",
+       y = "Count") +
+  theme_minimal()
+head(indels)
+
+ggbarplot(indel_counts, x = "type", y = "count",
+          fill = "type", color = "type", palette = "jco",
+          title = "Count of Insertions and Deletions",
+          xlab = "Type of Indel", ylab = "Count",
+          legend = "none",
+          label = TRUE, lab.vjust = -0.3)
+
+#plotagem de heterozidade
+
+het_ind <- read.csv("heterogozidade_ind.het", header = TRUE, sep = "")
+
+#Histograma do Coeficiente de Consanguinidade F
+
+het1 <- ggplot(het_ind, aes(x = F)) +
+  geom_histogram(binwidth = 0.01, fill = "red", color = "black", alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of the Consanguinity Coefficient",
+       x = "Consanguinity Coefficient (F)",
+       y = "Score")
+plot(het1)
+
+#codigo para filtrar variantes
+
+data_3 <- read.csv("freq_plink.frq", header = TRUE, sep = "")
+data3_semna <- na.omit(data_3)
+
+tabela_variantes <- data.frame(data3_semna)
+
+var2 <- variantes_maiores_0.01 <- subset(tabela_variantes, tabela_variantes$MAF > 0.01)
+
+var3 <- variantes_menores_0.01 <- subset(tabela_variantes, tabela_variantes$MAF < 0.01)
+
+data_variantes <- data.frame(
+                  Variants = c("Rares", "Common"),
+                   Quantity = c(214 , 35)
+                  )
+     
+
+data_var2 <- data.frame(
+            Variants_frequency = c("F>0.01", "F<0.01"),
+            Quantity = c(35 , 214)
+            )
+
+library(ggpubr)
+library(ggplot2)
+
+variantes1 <- ggbarplot(data_variantes, x = "Variants", y = "Quantity",
+          color = "Variants",  # Adiciona contorno colorido às barras
+          fill = "Variants",   # Preenche as barras com cores diferentes
+          palette = "npg",  # Paleta de cores
+          title = "Number of rare and common variants", # Título
+          xlab = "Variants",  # Rótulo do eixo X
+          ylab = "Quantity", # Rótulo do eixo Y
+          legend.title = "Legend")  # Título da legenda
+plot(variantes1)
+
+
+variantes2 <- variantes1 <- ggbarplot(data_var2, x = "Variants_frequency", y = "Quantity",
+                                      color = "Variants_frequency",  # Adiciona contorno colorido às barras
+                                      fill = "Variants_frequency",   # Preenche as barras com cores diferentes
+                                      palette = "npg",  # Paleta de cores
+                                      title = "Number of rare and common variants by frequency", # Título
+                                      xlab = "Variants_fequency",  # Rótulo do eixo X
+                                      ylab = "Quantity", # Rótulo do eixo Y
+                                      legend.title = "Legend")  # Título da legenda
+plot(variantes2)
+
+gridExtra::grid.arrange(variantes1, variantes2 )
